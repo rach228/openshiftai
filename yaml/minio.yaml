@@ -8,7 +8,8 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      # change capacity of PVC to however much your model needs
+      storage: 10Gi
   volumeMode: Filesystem
 ---
 kind: Secret
