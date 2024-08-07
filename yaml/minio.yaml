@@ -1,162 +1,155 @@
----
-kind: PersistentVolumeClaim
 apiVersion: v1
-metadata:
-  name: minio-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      # change capacity of PVC to however much your model needs
-      storage: 10Gi
-  volumeMode: Filesystem
----
-kind: Secret
-apiVersion: v1
-metadata:
-  name: minio-secret
 stringData:
-  # change the username and password to your own values.
-  # ensure that the user is at least 3 characters long and the password at least 8
-  minio_root_user: minio
-  minio_root_password: minio123
----
-kind: Deployment
-apiVersion: apps/v1
+  MINIO_ROOT_USER: minio
+  MINIO_ROOT_PASSWORD: minio123
+kind: Secret
 metadata:
   name: minio
+  labels:
+    app.kubernetes.io/name: minio
+    app.kubernetes.io/instance: minio
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: minio
+  labels:
+    app.kubernetes.io/name: minio
+    app.kubernetes.io/instance: minio
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: minio
+      app.kubernetes.io/name: minio
+      app.kubernetes.io/instance: minio
   template:
     metadata:
-      creationTimestamp: null
       labels:
-        app: minio
+        app.kubernetes.io/name: minio
+        app.kubernetes.io/instance: minio
     spec:
-      volumes:
-        - name: data
-          persistentVolumeClaim:
-            claimName: minio-pvc
-      containers:
-        - resources:
-            limits:
-              cpu: 250m
-              memory: 1Gi
-            requests:
-              cpu: 20m
-              memory: 100Mi
-          readinessProbe:
-            tcpSocket:
-              port: 9000
-            initialDelaySeconds: 5
-            timeoutSeconds: 1
-            periodSeconds: 5
-            successThreshold: 1
-            failureThreshold: 3
-          terminationMessagePath: /dev/termination-log
-          name: minio
-          livenessProbe:
-            tcpSocket:
-              port: 9000
-            initialDelaySeconds: 30
-            timeoutSeconds: 1
-            periodSeconds: 5
-            successThreshold: 1
-            failureThreshold: 3
-          env:
-            - name: MINIO_ROOT_USER
-              valueFrom:
-                secretKeyRef:
-                  name: minio-secret
-                  key: minio_root_user
-            - name: MINIO_ROOT_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: minio-secret
-                  key: minio_root_password
-          ports:
-            - containerPort: 9000
-              protocol: TCP
-            - containerPort: 9090
-              protocol: TCP
-          imagePullPolicy: IfNotPresent
-          volumeMounts:
-            - name: data
-              mountPath: /data
-              subPath: minio
-          terminationMessagePolicy: File
-          image: >-
-            quay.io/minio/minio:RELEASE.2024-07-31T05-46-26Z
-          args:
-            - server
-            - /data
-            - --console-address
-            - :9090
-      restartPolicy: Always
-      terminationGracePeriodSeconds: 30
-      dnsPolicy: ClusterFirst
       securityContext: {}
-      schedulerName: default-scheduler
-  strategy:
-    type: Recreate
-  revisionHistoryLimit: 10
-  progressDeadlineSeconds: 600
+      containers:
+      - name: minio
+        securityContext: {}
+        image: "quay.io/minio/minio"
+        imagePullPolicy: IfNotPresent
+        command:
+        - /usr/bin/docker-entrypoint.sh
+        - server
+        - /data
+        - "--console-address"
+        - ":9001"
+        envFrom:
+        - secretRef:
+            name: minio
+        ports:
+        - name: http
+          containerPort: 9000
+          protocol: TCP
+        - name: console
+          containerPort: 9001
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 4Gi
+          requests:
+            cpu: 500m
+            memory: 1Gi
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        livenessProbe:
+          httpGet:
+            path: /minio/health/live
+            port: http
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /minio/health/live
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+      tolerations:
+        - key: nvidia.com/gpu
+          value: "True"
+          effect: NoSchedule
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 32Gi
 ---
-kind: Service
 apiVersion: v1
+kind: Service
 metadata:
-  name: minio-service
+  name: minio
+  labels:
+    app.kubernetes.io/name: minio
+    app.kubernetes.io/instance: minio
 spec:
-  ipFamilies:
-    - IPv4
-  ports:
-    - name: api
-      protocol: TCP
-      port: 9000
-      targetPort: 9000
-    - name: ui
-      protocol: TCP
-      port: 9090
-      targetPort: 9090
-  internalTrafficPolicy: Cluster
   type: ClusterIP
-  ipFamilyPolicy: SingleStack
-  sessionAffinity: None
+  ports:
+    - port: 9000
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 9001
+      targetPort: console
+      protocol: TCP
+      name: console
   selector:
-    app: minio
+    app.kubernetes.io/name: minio
+    app.kubernetes.io/instance: minio
 ---
-kind: Route
 apiVersion: route.openshift.io/v1
+kind: Route
 metadata:
+  labels:
+    app.kubernetes.io/instance: minio
+    app.kubernetes.io/name: minio
+  name: minio-console
+spec:
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  port:
+    targetPort: console
+  to:
+    kind: Service
+    name: minio
+    weight: 100
+  wildcardPolicy: None
+status: {}
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  labels:
+    app.kubernetes.io/instance: minio
+    app.kubernetes.io/name: minio
   name: minio-api
 spec:
-  to:
-    kind: Service
-    name: minio-service
-    weight: 100
-  port:
-    targetPort: api
-  wildcardPolicy: None
   tls:
     termination: edge
     insecureEdgeTerminationPolicy: Redirect
----
-kind: Route
-apiVersion: route.openshift.io/v1
-metadata:
-  name: minio-ui
-spec:
+  port:
+    targetPort: http
   to:
     kind: Service
-    name: minio-service
+    name: minio
     weight: 100
-  port:
-    targetPort: ui
   wildcardPolicy: None
-  tls:
-    termination: edge
-    insecureEdgeTerminationPolicy: Redirect
+status: {}
