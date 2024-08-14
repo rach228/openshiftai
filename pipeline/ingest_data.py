@@ -1,5 +1,9 @@
 import os
 import boto3
+import urllib3
+
+# Disable SSL warnings
+urllib3.disable_warnings()
 
 # Retrieve credentials and endpoint from environment variables
 key_id = os.getenv("AWS_ACCESS_KEY_ID")
