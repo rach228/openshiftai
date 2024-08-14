@@ -90,7 +90,7 @@ spec:
       - ReadWriteOnce
       resources:
         requests:
-          storage: 32Gi
+          storage: 32Gi # Amend to however much storage your model files need
 ---
 apiVersion: v1
 kind: Service
