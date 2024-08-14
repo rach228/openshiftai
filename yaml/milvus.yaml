@@ -78,7 +78,7 @@ spec:
       - ReadWriteOnce
       resources:
         requests:
-          storage: 8Gi
+          storage: 8Gi # Amend to however much storage is needed
 status: {}
 ---
 apiVersion: v1
