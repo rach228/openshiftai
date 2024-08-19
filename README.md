@@ -17,16 +17,17 @@
 6. Open the `test-wb` workbench when the status is 'Running'.
 
 ### Create Elyra Pipeline to automate MLOps
-1. In RHOAI, navigate to the `demo` project. Under the Pipelines tab, create a pipeline server. Click on the key icon to auto-fill in the fields based on the `test-dc`.
-2. Open the `test-wb` workbench
-3. On the Launcher view, click Elyra and rename pipeline, e.g. `test-pipeline`.
-4. Open Panel and add Kubernetes Secrets (to use data connection) and choose appropriate Generic Node Defaults for Runtime Image. (Note: If you create the RHOAI data connection from the RHOAI dashboard, then the secret name is always preceded by aws-connection-)
-5. Drag and drop files to the visual pipeline editor and connect them.
-6. Right click the node to Open properties to configure output files.
-7. Save `test-pipeline` pipeline.
-8. Run `test-pipeline` pipeline.
-9. In RHOAI, go to Experiments > Experiments and runs to check the status of the pipeline.
-10. In the MinIO bucket, directory <pipeline-name-timestamp> is created and stores dependencies, log files, and output files of each node from each pipeline run.
+1. In the `test` MinIO bucket, save your data for let's say for data preprocessing, e.g. using the `/pipeline/data/input.txt` file.
+2. In RHOAI, navigate to the `demo` project. Under the Pipelines tab, create a pipeline server. Click on the key icon to auto-fill in the fields based on the `test-dc`.
+3. Open the `test-wb` workbench. Create two Jupyter Notebooks using `/pipeline/ingest_data.py` and `pipeline/enrich_data.py`.
+4. On the Launcher view, click Elyra and rename pipeline, e.g. `test-pipeline`.
+5. Open Panel and add Kubernetes Secrets (to use data connection) and choose appropriate Generic Node Defaults for Runtime Image. (Note: If you create the RHOAI data connection from the RHOAI dashboard, then the secret name is always preceded by aws-connection-)
+6. Drag and drop `ingest_data.ipynb` and `enrich_data.ipynb` to the visual pipeline editor and connect them.
+7. Right click the node to Open properties to configure output files.
+8. Save `test-pipeline` pipeline.
+9. Run `test-pipeline` pipeline.
+10. In RHOAI, go to Experiments > Experiments and runs to check the status of the pipeline.
+11. In the MinIO bucket, directory <pipeline-name-timestamp> is created and stores dependencies, log files, and output files of each node from each pipeline run.
 
 ### Deploy a Model using vLLM runtime
 1. In the `test` MinIO bucket, save your model files in the desired directory, for e.g. `/models`
