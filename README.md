@@ -28,8 +28,13 @@
 9. In RHOAI, go to Experiments > Experiments and runs to check the status of the pipeline.
 10. In the MinIO bucket, directory <pipeline-name-timestamp> is created and stores dependencies, log files, and output files of each node from each pipeline run.
 
-### Deploy Model with vLLM runtime
-1. 
+### Deploy a Model using vLLM runtime
+1. In the `test` MinIO bucket, save your model files in the desired directory, for e.g. `/models`
+2. In RHOAI, go to Settings > Serving runtimes.
+3. Duplicate the pre-installed `vLLM ServingRuntime for KServe` and amend the `spec.containers.args` according how the model needs to be served. Rename it and save.
+4. Navigate to the `demo` project. Under the Models tab, deploy `vicuna` model.
+5. The status is completed when an inference endpoint is created.
 
 ### Deploy Milvus and MongoDB
-1. 
+1. In ROSA, navigate to the `demo` project. Deploy a sample Milvus by using the `/yaml/milvus.yaml` manifest file.
+2. Login to ROSA via CLI. Deploy a sample MongoDB by running the following command: `oc new-app --image= quay.io/openshiftlabs/ccn-mongo:4.0 --name=mongodb -n demo`.
