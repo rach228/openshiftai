@@ -1,3 +1,4 @@
+# Store non-sensitive configuration data
 apiVersion: v1
 data:
   embedEtcd.yaml: |
@@ -12,6 +13,7 @@ metadata:
     app: milvus
   name: milvus
 ---
+# Ensure persistent storage
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -81,6 +83,7 @@ spec:
           storage: 8Gi # Amend to however much storage is needed
 status: {}
 ---
+# Expose Milvus pods to other components within the cluster
 apiVersion: v1
 kind: Service
 metadata:
