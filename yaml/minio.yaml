@@ -1,3 +1,4 @@
+# Store sensitive info such as credentials
 apiVersion: v1
 stringData:
   MINIO_ROOT_USER: minio
@@ -9,6 +10,7 @@ metadata:
     app.kubernetes.io/name: minio
     app.kubernetes.io/instance: minio
 ---
+# Ensure persistent storage
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -92,6 +94,7 @@ spec:
         requests:
           storage: 32Gi # Amend to however much storage your model files need
 ---
+# Exposes MinIO pods to other components within the cluster
 apiVersion: v1
 kind: Service
 metadata:
@@ -114,6 +117,7 @@ spec:
     app.kubernetes.io/name: minio
     app.kubernetes.io/instance: minio
 ---
+# Provides external access to MinIO's web UI 
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
@@ -134,6 +138,7 @@ spec:
   wildcardPolicy: None
 status: {}
 ---
+# Expose MinIO API to external clients
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
